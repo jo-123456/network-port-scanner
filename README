@@ -1,0 +1,137 @@
+# Network Port Scanner
+
+A fast, multi-threaded TCP port scanner written in Python. It checks which ports are open on a target host, identifies common services, reads simple banners, and prints a clear results table with a summary.
+
+> **Legal notice:** Only scan machines you own or have explicit permission to test. Unauthorized port scanning may be illegal.
+
+## Features
+
+- Scan a single port, a range, or several ranges at once (e.g. `2220-2225,5430-5434,8078-8082`)
+- Reports each port as **OPEN**, **CLOSED**, or **FILTERED**
+- Service name detection (e.g. `postgresql`, `http-alt`)
+- Banner / response detail for responsive services
+- Per-port latency in milliseconds
+- Concurrent scanning with a configurable worker count and timeout
+- Summary of open, closed, and filtered ports with total scan time
+- Unit tests included
+
+## Requirements
+
+- Python 3.8 or newer (developed on Python 3.11)
+- No third-party packages needed (standard library only)
+
+## Project Structure
+
+```
+network-port-scanner/
+├── port_scanner.py        # Main scanner
+├── test_port_scanner.py   # Unit tests
+├── execution_log.txt      # Sample scan output
+└── README.md
+```
+
+## Usage
+
+```
+python port_scanner.py <target> -p <ports>
+```
+
+Run `python port_scanner.py --help` to see every available option, including timeout and worker settings.
+
+### Examples
+
+Scan one port:
+
+```
+python port_scanner.py 127.0.0.1 -p 8080
+```
+
+Scan a range:
+
+```
+python port_scanner.py 127.0.0.1 -p 2220-2225
+```
+
+Scan multiple ranges:
+
+```
+python port_scanner.py 127.0.0.1 -p 2220-2225,5430-5434,8078-8082
+```
+
+Save the output to a file:
+
+```
+python port_scanner.py 127.0.0.1 -p 8080 > execution_log.txt 2>&1
+```
+
+## Sample Output
+
+```
+Scan started : 2026-10-05 18:10:10
+Target       : 127.0.0.1 (127.0.0.1)
+Ports        : 8080 (1 total)
+Timeout      : 1.0s   Workers: 100
+
+PORT   STATE     SERVICE     LATENCY    DETAIL
+----------------------------------------------------------------------
+8080   OPEN      http-alt    0.37 ms    responsive: 'HTTP/1.0 200 OK'
+----------------------------------------------------------------------
+
+SUMMARY
+  OPEN     :     1   ports: 8080
+  CLOSED   :     0   ports: -
+  FILTERED :     0   ports: -
+
+Scan finished in 0.00s
+```
+
+## Port States
+
+| State | Meaning |
+|-------|---------|
+| OPEN | A service accepted the connection |
+| CLOSED | The host actively refused the connection |
+| FILTERED | No response before the timeout (often a firewall) |
+
+## Try It Yourself
+
+Start a local test server in one terminal:
+
+```
+python -m http.server 8080
+```
+
+Scan it from a second terminal:
+
+```
+python port_scanner.py 127.0.0.1 -p 8080
+```
+
+Port 8080 should appear as OPEN. Stop the server with `Ctrl+C` when done, then scan again to see it as CLOSED.
+
+## Running the Tests
+
+```
+python -m unittest test_port_scanner.py -v
+```
+
+If the tests use pytest, install it with `pip install pytest` and run `pytest -v` instead.
+
+## How It Works
+
+1. The port argument is parsed into a list of individual ports.
+2. A pool of worker threads attempts a TCP connection to each port.
+3. A successful connection marks the port OPEN, and the scanner tries to read a short banner.
+4. A refused connection marks it CLOSED, and a timeout marks it FILTERED.
+5. Results are sorted and printed as a table, followed by a summary.
+
+## Future Improvements
+
+- JSON / CSV export
+- `--open-only` flag
+- UDP scanning
+- Better service fingerprinting
+
+## Author
+
+[jo-123456](https://github.com/jo-123456)
