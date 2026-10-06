@@ -1,70 +1,94 @@
-# Network Port Scanner
+<div align="center">
 
-A fast, multi-threaded TCP port scanner written in Python. It checks which ports are open on a target host, identifies common services, reads simple banners, and prints a clear results table with a summary.
+# 🔍 Network Port Scanner
 
-> **Legal notice:** Only scan machines you own or have explicit permission to test. Unauthorized port scanning may be illegal.
+**A fast, multi-threaded TCP port scanner written in pure Python.**
 
-## Features
+![Python](https://img.shields.io/badge/Python-3.8%2B-3776AB?logo=python&logoColor=white)
+![Release](https://img.shields.io/github/v/release/jo-123456/network-port-scanner)
+![License](https://img.shields.io/github/license/jo-123456/network-port-scanner)
+![Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen)
 
-- Scan a single port, a range, or several ranges at once (e.g. `2220-2225,5430-5434,8078-8082`)
-- Reports each port as **OPEN**, **CLOSED**, or **FILTERED**
-- Service name detection (e.g. `postgresql`, `http-alt`)
-- Banner / response detail for responsive services
-- Per-port latency in milliseconds
-- Concurrent scanning with a configurable worker count and timeout
-- Summary of open, closed, and filtered ports with total scan time
-- Unit tests included
+</div>
 
-## Requirements
+Scan a host for open ports, identify common services, read simple banners, and get a clean results table with a summary. It uses only the Python standard library, so there is nothing to install.
 
-- Python 3.8 or newer (developed on Python 3.11)
-- No third-party packages needed (standard library only)
+> ⚠️ **Legal notice:** Only scan machines you own or have explicit written permission to test. Unauthorized port scanning may be illegal.
 
-## Project Structure
+---
 
+## 📑 Table of Contents
+
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Usage](#-usage)
+- [Sample Output](#-sample-output)
+- [Port States](#-port-states)
+- [Try It Yourself](#-try-it-yourself)
+- [How It Works](#-how-it-works)
+- [Project Structure](#-project-structure)
+- [Running the Tests](#-running-the-tests)
+- [Troubleshooting](#-troubleshooting)
+- [Roadmap](#-roadmap)
+- [License](#-license)
+- [Author](#-author)
+
+---
+
+## ✨ Features
+
+- **Flexible port input:** a single port, a range, or several ranges at once (`2220-2225,5430-5434,8078-8082`)
+- **Three clear states:** OPEN, CLOSED, and FILTERED
+- **Service detection:** names common services such as `postgresql` and `http-alt`
+- **Banner reading:** shows a short response from services that reply (for example `HTTP/1.0 200 OK`)
+- **Latency per port:** connection time in milliseconds
+- **Fast concurrent scanning:** a pool of worker threads with a configurable timeout
+- **Readable report:** a results table plus a summary of open, closed and filtered ports with total scan time
+- **Zero dependencies:** standard library only
+- **Unit tests included**
+
+## 🚀 Quick Start
+
+```bash
+git clone https://github.com/jo-123456/network-port-scanner.git
+cd network-port-scanner
+python port_scanner.py 127.0.0.1 -p 8080
 ```
-network-port-scanner/
-├── port_scanner.py        # Main scanner
-├── test_port_scanner.py   # Unit tests
-├── execution_log.txt      # Sample scan output
-└── README.md
-```
 
-## Usage
+On Windows, use `python` (or `py`). On Linux/macOS, use `python3`.
+
+**Requirements:** Python 3.8 or newer (developed on Python 3.11).
+
+## 📖 Usage
 
 ```
 python port_scanner.py <target> -p <ports>
 ```
 
+| Argument | Description |
+|----------|-------------|
+| `<target>` | Host to scan, such as `127.0.0.1` or a hostname |
+| `-p <ports>` | Ports to scan: one port, a range, or a comma-separated mix |
+
 Run `python port_scanner.py --help` to see every available option, including timeout and worker settings.
 
 ### Examples
 
-Scan one port:
-
-```
+```bash
+# One port
 python port_scanner.py 127.0.0.1 -p 8080
-```
 
-Scan a range:
-
-```
+# A range
 python port_scanner.py 127.0.0.1 -p 2220-2225
-```
 
-Scan multiple ranges:
-
-```
+# Multiple ranges
 python port_scanner.py 127.0.0.1 -p 2220-2225,5430-5434,8078-8082
-```
 
-Save the output to a file:
-
-```
+# Save the output to a file
 python port_scanner.py 127.0.0.1 -p 8080 > execution_log.txt 2>&1
 ```
 
-## Sample Output
+## 🖥️ Sample Output
 
 ```
 Scan started : 2026-10-05 18:10:10
@@ -85,53 +109,82 @@ SUMMARY
 Scan finished in 0.00s
 ```
 
-## Port States
+## 🚦 Port States
 
-| State | Meaning |
-|-------|---------|
-| OPEN | A service accepted the connection |
-| CLOSED | The host actively refused the connection |
-| FILTERED | No response before the timeout (often a firewall) |
+| State | What happened | Meaning |
+|-------|---------------|---------|
+| 🟢 **OPEN** | The connection succeeded | A service is listening on the port |
+| 🔴 **CLOSED** | The host refused the connection | Nothing is listening, but the host is reachable |
+| 🟡 **FILTERED** | No reply before the timeout | Traffic is probably blocked, for example by a firewall |
 
-## Try It Yourself
+## 🧪 Try It Yourself
 
-Start a local test server in one terminal:
+You can test the scanner safely on your own machine.
 
-```
+**Terminal 1:** start a test web server:
+
+```bash
 python -m http.server 8080
 ```
 
-Scan it from a second terminal:
+**Terminal 2:** scan it:
 
-```
+```bash
 python port_scanner.py 127.0.0.1 -p 8080
 ```
 
-Port 8080 should appear as OPEN. Stop the server with `Ctrl+C` when done, then scan again to see it as CLOSED.
+Port 8080 should show **OPEN**. Press `Ctrl+C` in Terminal 1 to stop the server, then scan again and it should show **CLOSED**.
 
-## Running the Tests
+> Open the test server in a browser at `http://127.0.0.1:8080` (not `http://[::]:8080`).
+
+## ⚙️ How It Works
+
+1. The port argument is parsed into a list of individual ports.
+2. A pool of worker threads tries a TCP connection to each port in parallel.
+3. A successful connection marks the port **OPEN**, and the scanner reads a short banner if the service replies.
+4. A refused connection marks it **CLOSED**, and a timeout marks it **FILTERED**.
+5. Results are sorted by port and printed as a table, followed by a summary.
+
+## 📁 Project Structure
 
 ```
+network-port-scanner/
+├── port_scanner.py        # Main scanner
+├── test_port_scanner.py   # Unit tests
+├── execution_log.txt      # Sample scan output
+├── LICENSE                # MIT License
+└── README.md              # You are here
+```
+
+## ✅ Running the Tests
+
+```bash
 python -m unittest test_port_scanner.py -v
 ```
 
 If the tests use pytest, install it with `pip install pytest` and run `pytest -v` instead.
 
-## How It Works
+## 🛠️ Troubleshooting
 
-1. The port argument is parsed into a list of individual ports.
-2. A pool of worker threads attempts a TCP connection to each port.
-3. A successful connection marks the port OPEN, and the scanner tries to read a short banner.
-4. A refused connection marks it CLOSED, and a timeout marks it FILTERED.
-5. Results are sorted and printed as a table, followed by a summary.
+| Problem | Fix |
+|---------|-----|
+| `python` is not recognized | Install Python from python.org and tick **Add Python to PATH**, or try `py` |
+| `can't open file 'port_scanner.py'` | Run the command from inside the project folder |
+| Every port shows FILTERED | The host may be blocking traffic, or the timeout is too short; try a larger timeout |
+| Browser shows `ERR_ADDRESS_INVALID` | Use `http://127.0.0.1:8080` instead of `http://[::]:8080` |
 
-## Future Improvements
+## 🗺️ Roadmap
 
-- JSON / CSV export
-- `--open-only` flag
-- UDP scanning
-- Better service fingerprinting
+- [ ] JSON and CSV export
+- [ ] `--open-only` flag
+- [ ] UDP scanning
+- [ ] Better service and version fingerprinting
 
-## Author
+## 📄 License
 
-[jo-123456](https://github.com/jo-123456)
+Released under the [MIT License](LICENSE).
+
+## 👤 Author
+
+**Jonsia Cejohn**
+GitHub: [@jo-123456](https://github.com/jo-123456)
